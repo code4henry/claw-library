@@ -1,28 +1,33 @@
 /**
  * print_pw.js
- * Print HTML certificates to landscape A4 PDF using Playwright + Chrome.
+ * Print one or more HTML files to landscape A4 PDF using Playwright + Chrome.
  * 
- * Usage: node print_pw.js [htmlPath] [pdfPath]
- *   or edit DESKTOP/OUTPUT constants below and run: node print_pw.js
+ * Usage:
+ *   node print_pw.js [htmlPath] [pdfPath]
+ *   node print_pw.js "C:\path\to\file.html" "C:\path\to\output.pdf"
+ *
+ * Or edit the `files` array below and run: node print_pw.js
  * 
  * Prerequisites:
  *   cd ~/.openclaw/workspace && npm install playwright
+ *   Chrome available at the path set in CHROME constant
  */
 
 const { chromium } = require('playwright');
 const path = require('path');
 
 // === CONFIGURATION ===
-const DESKTOP = 'C:\\Users\\hwhhan\\Desktop';
+// Edit this array to process multiple files
 const files = [
-  { html: 'MA_ETFW_Certificate_Tier1.html', pdf: 'MA_ETFW_Certificate_Tier1.pdf' },
-  { html: 'MA_ETFW_Certificate_Tier2.html', pdf: 'MA_ETFW_Certificate_Tier2.pdf' },
-  { html: 'MA_ETFW_Certificate_Tier3.html', pdf: 'MA_ETFW_Certificate_Tier3.pdf' },
+  { html: 'input.html',   pdf: 'output.pdf'   },
+  // Example — add more entries as needed:
+  // { html: 'page2.html', pdf: 'page2.pdf'   },
 ];
 
+// Chrome executable path — update if your Chrome is installed elsewhere
 const CHROME = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
 
-async function printCert(htmlFile, pdfFile) {
+async function printHtmlToPdf(htmlFile, pdfFile) {
   const browser = await chromium.launch({
     executablePath: CHROME,
     headless: true,
@@ -30,20 +35,13 @@ async function printCert(htmlFile, pdfFile) {
   });
   const page = await browser.newPage();
 
-  // Load HTML
-  const htmlPath = path.join(DESKTOP, htmlFile);
+  // Load HTML from local file
+  const htmlPath = path.resolve(htmlFile);
   await page.goto('file:///' + htmlPath.replace(/\\/g, '/'), { waitUntil: 'networkidle' });
-
-  // Inject @page safety CSS
-  await page.evaluate(() => {
-    const s = document.createElement('style');
-    s.textContent = '@page { size: 297mm 210mm landscape; margin: 0; }';
-    document.head.appendChild(s);
-  });
 
   // Print landscape A4
   await page.pdf({
-    path: path.join(DESKTOP, pdfFile),
+    path: path.resolve(pdfFile),
     format: 'A4',
     landscape: true,
     printBackground: true,
@@ -55,9 +53,18 @@ async function printCert(htmlFile, pdfFile) {
 }
 
 (async () => {
+  // Command-line override: node print_pw.js [htmlPath] [pdfPath]
+  if (process.argv.length >= 4) {
+    const htmlArg = process.argv[2];
+    const pdfArg = process.argv[3];
+    await printHtmlToPdf(htmlArg, pdfArg);
+    return;
+  }
+
+  // Default: process the files array
   try {
     for (const f of files) {
-      await printCert(f.html, f.pdf);
+      await printHtmlToPdf(f.html, f.pdf);
     }
     console.log('All done!');
   } catch (e) {
