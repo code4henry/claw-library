@@ -1,43 +1,42 @@
-# GitHub Repo Manager Skill
+# GitHub Repo Manager
 
-Rename GitHub repositories and manage repo settings via automation.
+Manage and automate GitHub repository operations via browser (CDP) and GitHub API.
+
+## ⚠️ Intended Use: CLAW-LIBRARY Public Repository
+
+This skill is published in the **public** `claw-library` repository for general use. It does **not** contain project-specific or private information.
+
+---
 
 ## Use When
-- Rename a GitHub repository
-- Need to batch-update repository settings
-- Want to automate GitHub web UI actions that require authentication
+
+- Rename a GitHub repository (web UI or API)
+- Batch-update repository settings via web
+- Automate GitHub web UI actions requiring authentication
+- Manage repositories across different workflows
 
 ## Prerequisites
+
 - Chrome/Chromium browser with OpenClaw's browser plugin running
 - `ws` npm package available at `C:\Users\hwhhan\AppData\Local\anaconda3\node_modules\openclaw\node_modules\ws`
+- GitHub token stored in Windows Credential Manager under `git:https://github.com` (for API method)
 
-## Rename a Repository
+---
+
+## Method 1: Browser (CDP) — Web UI Automation
+
+Use when you already have GitHub open in the browser and want to automate UI actions.
 
 ### Step 1: Find the CDP Page Target
+
 ```powershell
-# Get the CDP WebSocket URL for the current browser tab
 $cdp = Invoke-RestMethod -Uri "http://127.0.0.1:18800/json" -Method GET -TimeoutSec 5
 $targetPage = $cdp | Where-Object { $_.type -eq "page" -and $_.url -match "github.com" } | Select-Object -First 1
 $targetPage.webSocketDebuggerUrl
 ```
 
 ### Step 2: Run the Rename Script
-Use the provided `rename-repo.js` script (see below).
 
-### Step 3: Update Local Git Remote
-After rename, update the local clone's remote:
-```powershell
-git remote set-url origin https://github.com/{NEW_OWNER}/{NEW_NAME}.git
-```
-
-Also rename the local folder:
-```powershell
-Rename-Item -Path "C:\path\to\old-folder" -NewName "new-folder"
-```
-
-## The CDP Rename Script (`rename-repo.js`)
-
-Save this to your workspace:
 ```javascript
 const WebSocket = require('ws');
 
@@ -106,11 +105,106 @@ $env:NODE_PATH="C:\Users\hwhhan\AppData\Local\anaconda3\node_modules\openclaw\no
 node rename-repo.js
 ```
 
-## Key Insight: Why CDP Over Browser CLI?
+### Key Insight: Why CDP Over Browser CLI?
 
 GitHub's anti-automation detects Playwright/Selenium browser events. But CDP's `Input.insertText` bypasses keyboard event listeners entirely — the page sees the text but not the "automation fingerprint."
 
+---
+
+## Method 2: API — Command Line Rename
+
+Use when you prefer API over browser UI. Requires GitHub token in Windows Credential Manager.
+
+### Step 1: Retrieve GitHub Token
+
+```powershell
+$sig = @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class Cred {
+    [DllImport("advapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
+    public static extern bool CredRead(string target, int type, int flags, out IntPtr cred);
+    [DllImport("advapi32.dll")]
+    public static extern void CredFree(IntPtr cred);
+    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    public struct CREDENTIAL {
+        public int Flags;
+        public int Type;
+        public string TargetName;
+        public string Comment;
+        public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
+        public int CredentialBlobSize;
+        public IntPtr CredentialBlob;
+        public int Persist;
+        public int AttributeCount;
+        public IntPtr Attributes;
+        public string TargetAlias;
+        public string UserName;
+    }
+    public static string GetPassword(string target) {
+        IntPtr credPtr;
+        if (CredRead(target, 1, 0, out credPtr)) {
+            CREDENTIAL cred = (CREDENTIAL)Marshal.PtrToStructure(credPtr, typeof(CREDENTIAL));
+            string password = Marshal.PtrToStringUni(cred.CredentialBlob, cred.CredentialBlobSize / 2);
+            CredFree(credPtr);
+            return password;
+        }
+        return null;
+    }
+}
+"@
+Add-Type -TypeDefinition $sig -ErrorAction SilentlyContinue
+$token = [Cred]::GetPassword("git:https://github.com")
+```
+
+### Step 2: Rename Repository via API
+
+```powershell
+$headers = @{
+    "Authorization" = "token $token"
+    "Accept" = "application/vnd.github+json"
+}
+$body = '{"name":"new-repo-name","description":"Your description"}'
+$result = Invoke-RestMethod -Method PATCH `
+    -Uri "https://api.github.com/repos/OWNER/old-repo-name" `
+    -Headers $headers `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) `
+    -ContentType "application/json"
+$result | Select-Object name, full_name
+```
+
+### Step 3: Update Local Remote URL
+
+```powershell
+git remote set-url origin "https://github.com/OWNER/new-repo-name.git"
+```
+
+---
+
+## Common Failure Patterns
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| "Repository not found" after rename | Updated remote URL before GitHub rename completed | Revert to old name, retry, then update URL after confirmation |
+| 401 Unauthorized | Token invalid or expired | Token must come from Windows Credential Manager, not hardcoded |
+| Push fails with "Everything up-to-date" but remote missing files | Local and remote branches diverged | `git push origin branch --force` after verifying remote URL |
+| Multiple branches on remote (main + master) | Previous pushes created different branches | Merge into unified branch, push and set as default |
+| CDP rename fails silently | GitHub detected automation fingerprint | Use `Input.insertText` via CDP, not keyboard events |
+
+---
+
+## Post-Rename Checklist
+
+1. ✅ Verify URL changed in browser
+2. ✅ Update local git remote: `git remote set-url origin https://github.com/OWNER/NEW_NAME.git`
+3. ✅ Rename local folder to match
+4. ✅ Push to confirm: `git push origin branch --force`
+
+---
+
 ## Notes
+
 - The CDP page target ID changes on each navigation — re-fetch from `http://127.0.0.1:18800/json` when in doubt
-- After rename, update BOTH the git remote URL AND the local folder name
 - This method works for any GitHub web UI action (not just rename)
+- For embedded git repos (submodules within a parent workspace) — do NOT add as separate git repo, they have their own remotes
