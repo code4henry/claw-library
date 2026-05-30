@@ -13,6 +13,7 @@
 | [`html-to-pdf`](html-to-pdf/) | 使用 Playwright 将 HTML 转换为 PDF，精准控制页面尺寸 |
 | [`github-repo-manager`](github-repo-manager/) | 通过浏览器（CDP）或 GitHub API 重命名和管理 GitHub 仓库 |
 | [`workspace-init`](workspace-init/) | 为复杂多文件任务创建专用项目工作区文件夹 |
+| [`chrome-mcp-control`](chrome-mcp-control/) | ⚠️ 已废弃 — 已合并到内置 `browser-automation` 技能 |
 
 ---
 
@@ -21,7 +22,7 @@
 技能是独立模块。将技能文件夹复制到 OpenClaw 的 plugin-skills 目录：
 
 ```
-~/.openclaw/plugin-skills/<技能名称>/
+~/.openclaw/skills/<技能名称>/
 └── SKILL.md
 ```
 
@@ -43,6 +44,7 @@ claw-library/
 ├── README-zh.md           # 中文版说明
 ├── html-to-pdf/           # HTML 转 PDF（Playwright）
 ├── github-repo-manager/   # GitHub 仓库操作（CDP + API）
+├── chrome-mcp-control/    # ⚠️ 已废弃 — 已合并到 browser-automation
 └── workspace-init/        # 项目工作区初始化
 ```
 

@@ -13,6 +13,7 @@ A public skill library for [OpenClaw](https://github.com/openclaw/openclaw) — 
 | [`html-to-pdf`](html-to-pdf/) | Convert HTML to PDF with precise page size control using Playwright |
 | [`github-repo-manager`](github-repo-manager/) | Rename and manage GitHub repositories via browser (CDP) or GitHub API |
 | [`workspace-init`](workspace-init/) | Create a dedicated project workspace folder for complex multi-file tasks |
+| [`chrome-mcp-control`](chrome-mcp-control/) | ⚠️ Deprecated — merged into built-in `browser-automation` skill |
 
 ---
 
@@ -21,7 +22,7 @@ A public skill library for [OpenClaw](https://github.com/openclaw/openclaw) — 
 Skills are standalone modules. Copy a skill folder into your OpenClaw plugin-skills directory:
 
 ```
-~/.openclaw/plugin-skills/<skill-name>/
+~/.openclaw/skills/<skill-name>/
 └── SKILL.md
 ```
 
@@ -40,9 +41,11 @@ This repository is **English-first**. Skills are written in English, with commen
 ```
 claw-library/
 ├── README.md              # This file
+├── README-zh.md           # Chinese version
 ├── html-to-pdf/           # HTML → PDF conversion (Playwright)
 ├── github-repo-manager/   # GitHub repo operations (CDP + API)
-└── workspace-init/       # Project workspace setup
+├── chrome-mcp-control/    # ⚠️ Deprecated — merged into browser-automation
+└── workspace-init/        # Project workspace setup
 ```
 
 ---
