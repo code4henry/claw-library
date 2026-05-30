@@ -19,7 +19,7 @@ A public skill library for [OpenClaw](https://github.com/openclaw/openclaw) — 
 
 ## 🔧 How to Use
 
-Skills are standalone modules. Copy a skill folder into your OpenClaw plugin-skills directory:
+Skills are standalone modules. Copy a skill folder into your OpenClaw skills directory:
 
 ```
 ~/.openclaw/skills/<skill-name>/

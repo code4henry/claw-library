@@ -19,7 +19,7 @@
 
 ## 🔧 如何使用
 
-技能是独立模块。将技能文件夹复制到 OpenClaw 的 plugin-skills 目录：
+技能是独立模块。将技能文件夹复制到 OpenClaw 的 skills 目录：
 
 ```
 ~/.openclaw/skills/<技能名称>/
